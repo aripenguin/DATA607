@@ -2,7 +2,7 @@
 title: "607_Assignment1"
 author: "Ariann Chai"
 date: "2023-09-01"
-output: pdf_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
