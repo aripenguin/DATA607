@@ -1,0 +1,98 @@
+---
+title: "607_Assignment3"
+author: "Ariann Chai"
+date: "2023-09-13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r libraries}
+library(stringr)
+```
+
+## 1. Using the 173 majors listed in fivethirtyeight.com’s College Majors dataset [https://fivethirtyeight.com/features/the-economic-guide-to-picking-a-college-major/], provide code that identifies the majors that contain either "DATA" or "STATISTICS"
+
+In order to find this, I loaded the majors-list.csv directly from fivethirtyeight's github and perform a str_detect on the csv. 
+
+```{r majors}
+library(RCurl) 
+x <- getURL("https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/majors-list.csv") 
+y <- read.csv(text = x)
+y
+
+selectedMajors <- y[str_detect(y$Major, "DATA|STATISTICS"), ]
+selectedMajors
+```
+
+The `r nrow(selectedMajors)` majors that contain either "DATA" or "STATISTICS" are:  
+`r str_c(selectedMajors$Major, collapse = ", ")`.  
+
+## 2. Write code that transforms the data below:  
+
+(I do not think I finally understood what the data we are trying to transform is suppose to look like or what typeof it is)
+
+```{r 2}
+before <- "bell pepper, bilberry, blackberry, blood orange, blueberry, cantaloupe, chili pepper, cloudberry, elderberry, lime, lychee, mulberry, olive, salal berry"
+before
+
+after <- c(str_split(before, ", "))
+after
+```  
+
+## 3. Describe, in words, what these expressions will match:
+
+a. (.)\1\1 - This expression will match when a character repeats 3 times in a row.
+
+```{r 3a}
+str_detect("eee", "(.)\\1\\1")
+```    
+
+b. "(.)(.)\\2\\1" - This expression will match when 2 letters and the next 2 letters are the same but flipped. de -> ed
+
+```{r 3b}
+str_detect("deed", "(.)(.)\\2\\1")
+```  
+
+c. (..)\1 - This expression will match when 2 characters repeat together.
+
+```{r 3c}
+str_detect("haha", "(..)\\1")
+```  
+
+d. "(.).\\1.\\1" - This expression will match when a character is repeated 3 times with another character in between. (in the example, the a is repeating character separated by n's - bAnAnA)
+
+```{r 3d}
+str_detect("banana", "(.).\\1.\\1")
+```    
+
+e. "(.)(.)(.).*\\3\\2\\1" - This expression will match when 3 characters repeat in the reverse order later in the string. (the same as 3b but there can be 0 or multiple characters in between) abcdefcba -> abc _def_ cba
+
+```{r 3e}
+str_detect("abcdefcba", "(.)(.)(.).*\\3\\2\\1")
+```   
+
+## 4. Construct regular expressions to match words that:
+
+a. Start and end with the same character: ^(.).*\\1$
+```{r 4a}
+str_detect("area", "^(.).*\\1$")
+```  
+
+b. Contain a repeated pair of letters (e.g. "church" contains "ch" repeated twice.): (..).*\\1
+```{r 4b}
+str_detect("chruch", "(..).*\\1")
+```   
+
+c. Contain one letter repeated in at least three places (e.g. "eleven" contains three "e"s.): (.).*\\1.*\\1
+```{r 4c}
+str_detect("eleven", "(.).*\\1.*\\1")
+```   
