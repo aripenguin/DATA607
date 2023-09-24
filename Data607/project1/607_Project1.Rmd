@@ -1,0 +1,125 @@
+---
+title: "607 Project 1"
+author: "Ariann Chai"
+date: "2023-09-19"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This is the R Markdown document for my 607 project 1. I had to take in txt file (tournamentinfo.txt) of chess tournament data and make a new csv with 5 columns using the info in the txt file:
+
+- Player’s Name  
+- Player’s State  
+- Total Number of Points  
+- Player’s Pre-Rating  
+- Average Pre Chess Rating of Opponents  
+
+In order to accomplish this, I saved the 5 requested columns into separate vectors and combined them into a dataframe later. To get the needed data for the vectors, I heavily used str_extract and regex/pattern making.  
+
+Within the used regexs, the way the data was saved (with | in between columns) was a big help in targeting specific sections of the string. Working with str_extract gave a lot of NA values as well that needed to get removed with !is.na().
+
+```{r libraries}
+library(stringr)
+library(readr)
+```
+
+## Load txt file
+First step was to load in the txt file, tournamentinfo.txt with the needed data. Below is what the raw data from that file looked like:
+```{r load_txt}
+txt_data <- paste(readLines("tournamentinfo.txt"))
+txt_data
+```
+
+## Make and fill a vector for Player's Name
+I used str_extract with the regular expression "\\| [A-Z]+(.)+[A-Z]+     ". The (.) and additional spaces after were added in order to catch full names of people with more than 2 words i.e. "THOMAS JOSEPH HOSMER".  
+This is the only vector that had an extra row in it as the label at the top of the txt file with "USCF ID" was also returning in player_names so it had to be manually removed.
+```{r player_names}
+player_names <- str_extract(txt_data, "\\| [A-Z]+(.)+[A-Z]+     ")
+player_names <-player_names[!is.na(player_names)]
+player_names <- str_extract(player_names, "[A-Z]+(.)+[A-Z]+")
+player_names <- player_names[ !player_names == 'USCF ID']
+player_names
+```
+
+## Make and fill a vector for Player's State
+I used str_extract with the regular expression "[A-Z][A-Z] \\|". 
+This one was simplier than the player's names as states are always two 2 letters.
+```{r player_states}
+player_states <- str_extract(txt_data, "[A-Z][A-Z] \\|")
+player_states <-player_states[!is.na(player_states)]
+player_states <- str_extract(player_states, "[A-Z][A-Z]")
+player_states
+```
+
+## Make and fill a vector for Total Number of Points
+I used str_extract with the regular expression "\\|[0-9].[0-9]"
+This one was simple like player's state as it would always be #.#. 
+I could also write the regex as "\\|[0-9].[0,5]" as the 2nd number was always 0 or 5.
+```{r points_total}
+points_total <- str_extract(txt_data, "\\|[0-9].[0-9]")
+points_total <-points_total[!is.na(points_total)]
+points_total <- str_extract(points_total, "[0-9].[0-9]")
+points_total
+```
+
+## Make and fill a vector for Player’s Pre-Rating
+I used str_extract with the regular expression "R: +[0-9][0-9][0-9]+".
+```{r player_prerating}
+player_prerating <- str_extract(txt_data, ("R: +[0-9][0-9][0-9]+"))
+player_prerating <-player_prerating[!is.na(player_prerating)]
+player_prerating <- str_extract(player_prerating, "[0-9][0-9][0-9]+")
+player_prerating
+```
+
+## Make and fill a vector for Average Pre Chess Rating of Opponents
+This last vector was a lot more work than the other vectors as we first had to extract the section of each player's data with their opponents' ids. It took 2 str_extracts to get the opponent ids by themselves (together in a character vector for that player). Below is the code with the str_extract statements and examples of what a line in opponents_prerating looks like.
+```{r opponents_prerating}
+opponents_prerating <- str_extract(txt_data, ("(\\|[L,W,D]+ +[0-9]+).*\\|"))
+opponents_prerating <- opponents_prerating[!is.na(opponents_prerating)]
+opponents_prerating[1]
+
+opponents_prerating <- str_extract_all(opponents_prerating,"[0-9]+")
+opponents_prerating[1]
+```  
+After getting it down to just the opponents' id numbers for each player, I then needed to find the mean of each player's opponents pre rating. In order to do this, I used 2 for loops (1 looping through the players and 1 looping around the opponents' id for that player). For each opponent id in that player's vector, I called the vector player_prerating I made earlier to get the opponent's prerating. After the last opponent id in that player's vector, I divided it by number of opponents and added it to avg_opponents_prerating. I made use of two temp variables for the number of opponents for each player and the combined prerating scores of their opponents that would reset after every player vector.
+```{r avg_opponents_prerating}}
+avg_opponents_prerating <- vector(length=length(opponents_prerating))
+for (i in 1:length(opponents_prerating)){
+  opponents_num <- 0 
+  scores_combined <- 0 
+  for (j in opponents_prerating[[i]]){
+    opponents_num <- opponents_num+1
+    scores_combined <- scores_combined+as.numeric(player_prerating[as.numeric(j[1])])
+  }
+  avg_opponents_prerating[i] <- scores_combined/opponents_num
+}
+avg_opponents_prerating <- round(avg_opponents_prerating, 0)
+avg_opponents_prerating
+```
+
+## Turn the 5 vectors into a dataframe
+With all 5 vectors created and filled, it is now time to make the csv_data dataframe that will be saved as a csv later. 
+Below is the final results of the collected data from tournamentinfo.txt
+```{r csv_data}
+csv_data <- data.frame(player_names,player_states,points_total,player_prerating,avg_opponents_prerating)
+
+colnames(csv_data)[1]="Player’s Name"
+colnames(csv_data)[2]="Player’s State"
+colnames(csv_data)[3]="Total Number of Points"
+colnames(csv_data)[4]="Player’s Pre-Rating"
+colnames(csv_data)[5]="Average Pre Chess Rating of Opponents"
+
+csv_data
+```
+
+## Write dataframe to csv
+For the final step, using the readr library and the function write_csv, we can write csv_data into tournamentinfo.csv.
+```{r write_csv}
+write_csv(csv_data, "tournamentinfo.csv")
+```
+
