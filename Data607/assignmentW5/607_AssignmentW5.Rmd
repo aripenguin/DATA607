@@ -1,0 +1,103 @@
+---
+title: "607_AssignmentW5"
+author: "Ariann Chai"
+date: "2023-09-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data 607 - Assignment W5
+
+For this assignment, we had to import some flight data and change the dataframe into a tidy one (using the tidyr library). So first, I started by getting my libraries. 
+
+```{r libraries}
+library(dplyr)
+library(tidyr)
+library(readr)
+```
+
+##Importing the data
+For my R file and work, I used mySqlConnection as shown below. 
+
+```{sqlconnection}
+install.packages("RMySQL")
+library(RMySQL)
+
+mysqlconnection = dbConnect(RMySQL::MySQL(),
+                            dbname='607_AssignmentW5',
+                            host='localhost',
+                            port=3306,
+                            user='root',
+                            password='')
+```
+
+However, since I had to delete the password for this command and it will not work, I saved it as a csv to be called for this RMarkdown file
+
+```{arrivalDelays query}
+result = dbSendQuery(mysqlconnection, "select * from arrivalDelays") 
+arrivalDelays = fetch(result)
+write.csv(arrivalDelays,file='/Users/Ari/Data607/assignmentW5/arrivalDelays.csv')
+```
+
+So now we can grab it as a csv. We also need to get rid of the extra id column that was generated from the sql table.
+```{r arrivalDelays csv}
+arrivalDelays <- read_csv("arrivalDelays.csv")
+
+#clean up the data and set it as a simple dataframe
+arrivalDelays <- subset(arrivalDelays, select = -1)
+as_tibble(arrivalDelays)
+```
+
+## Cleaning the data
+Now we must change this dataframe into a tidy one. From the lecture and readings, I learned a tidy table means "1 row for each observations".  
+
+Right now, the above table contains 2 airlines that have 2 rows each for 2 different delay status (on time, delayed) but, each row contains 5 different observations in the format of the 5 columns based on locations (LosAngeles, Phoenix, SanDiego, SanFrancisco, Seatte). We need to separate each row into 5 rows that reflection each of these locations. In the end, we will have 4 (2 airlines * 2 delay status) * 5 locations = 20 rows.  
+
+In order to do this, I used the pivot_longer command and had it separate the rows based on the 5 location columns. They are then combined into 2 new columns: 1 for the location name and 1 for the value (# of flights) that used to sit in the individual location column.
+```{r arrivalDelay_tidy}
+arrivalDelay_tidy <- 
+  pivot_longer(arrivalDelays, 
+             cols=c('LosAngeles', 'Phoenix', 'SanDiego', 'SanFrancisco', 'Seatte'),
+             names_to = 'Locations',
+             values_to = 'Flights')
+arrivalDelay_tidy <- arrivalDelay_tidy[order(arrivalDelay_tidy$Locations),]
+arrivalDelay_tidy
+```
+
+## Anaylsis
+
+```{r arrivalDelay_tidy_airline}
+arrivalDelay_tidy %>% group_by(airline) %>% 
+  summarise(count=sum(Flights),
+            .groups = 'drop')
+
+arrivalDelay_tidy %>% 
+  group_by(airline, delayStatus) %>% 
+  summarise(count=sum(Flights),
+            .groups = 'drop')
+```
+
+The two tables above show us the number of flights from each airline and the breakdown of that airlines' on-time & delayed flights. AM WEST has more flights than ALASKA and less delayed flights as when you work out the ratios: 1 in 6.5 flights from ALASKA are delayed and 1 in 8.2 flights from AM WEST are delayed.
+
+```{r arrivalDelay_tidy_location}
+arrivalDelay_tidy %>% 
+  group_by(Locations) %>% 
+  summarise(count=sum(Flights),
+            .groups = 'drop')
+
+arrivalDelay_tidy %>% 
+  group_by(Locations, delayStatus) %>% 
+  summarise(count=sum(Flights),
+            .groups = 'drop')
+```
+
+The two tables above show us the number of flights arriving to each location and the breakdown of that location's on-time & delayed arrived flights. Phoenix has the most arrival flights and least amount of delayed flights is San Francisco. The ratio breakdown of delayed flights to on-time flights is below:  
+- LosAngeles: 1 in 6.6   
+- Phoenix: 1 in 11.8  
+- SanDiego: 1 in 7  
+- SanFrancisco: 1 in 3.6  
+- Seattle: 1 in 5.6  
+
