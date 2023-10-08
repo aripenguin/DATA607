@@ -1,0 +1,89 @@
+---
+title: "607_Project2_Stock_Market"
+author: "Ariann Chai"
+date: "2023-10-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data 607 Project 2: Stock Market Dataset
+
+For this project, I will import three untidy datasets from our week 5 discussion board, tidy them, and analyze them. So first, I started by getting my libraries. 
+
+```{r libraries}
+library(dplyr)
+library(tidyr)
+library(readr)
+library(ggplot2)
+```
+
+## Stock Market Dataset
+This second rmd file will be for the dataset is from Haig Bedros's post and focuses on stock market. This dataset contains the oil and gold prices for different dates. It also contains what a bond that date will yield after different year period.
+
+##Step 1: Import the dataset  
+```{r import data}
+stockMarket <- read_csv("market_indicators.csv")
+colnames(stockMarket)
+```
+
+##Step 2: Tidy the dataset  
+In order to tidy up this dataset and make it one observation per row, I ended up making 3 new different csvs: 1 for the oil price data, gold price data, and treasury year. These are all independent observations so they can not be on the same dataset. Oil and Gold were easy as I just subsetted the dataset with the couple columns needed. The clean ups are for columns that did not have any data of that new subset holds (oil,gold,treasury) but, probably held data for a different new subset data. For the treasury columns, I subsetted them into a new dataset and then used pivot_longer to combine them into 2 new columns.
+
+```{r tidy data}
+oilMarket_tidy <- subset(stockMarket, select = c(1,2,3))
+oilMarket_tidy <-oilMarket_tidy[rowSums(is.na(oilMarket_tidy)) == 0, ]
+oilMarket_tidy
+
+goldMarket_tidy <- subset(stockMarket, select = c(1,2,4))
+goldMarket_tidy <-goldMarket_tidy[rowSums(is.na(goldMarket_tidy)) == 0, ]
+goldMarket_tidy
+
+treasuryMarket <- subset(stockMarket, select = c(1,2,5,6,7))
+treasuryMarket <-treasuryMarket[rowSums(is.na(treasuryMarket)) == 0, ]
+treasuryMarket
+
+treasuryMarket_tidy <- 
+  pivot_longer(treasuryMarket, 
+               cols=c('treasury_5_years', 'treasury_10_years', 'treasury_30_years'),
+               names_to = 'Treasury Year',
+               values_to = 'Amount')
+treasuryMarket_tidy <- treasuryMarket_tidy[order(treasuryMarket_tidy$Date),]
+#clean up the Treasury Year names replace?
+treasuryMarket_tidy$`Treasury Year`[which(treasuryMarket_tidy$`Treasury Year`=="treasury_5_years")] <- 5
+treasuryMarket_tidy$`Treasury Year`[which(treasuryMarket_tidy$`Treasury Year`=="treasury_10_years")] <- 10
+treasuryMarket_tidy$`Treasury Year`[which(treasuryMarket_tidy$`Treasury Year`=="treasury_30_years")] <- 30
+treasuryMarket_tidy
+
+write.csv(oilMarket_tidy,file='/Users/Ari/Data607/project2/oilMarket_tidy.csv')
+write.csv(goldMarket_tidy,file='/Users/Ari/Data607/project2/goldMarket_tidy.csv')
+write.csv(treasuryMarket_tidy,file='/Users/Ari/Data607/project2/treasuryMarket_tidy.csv')
+
+```
+
+##Step 3: Analysis  
+I believe since this data uses dates as a main key and is then recording data throughout a time period. Line graphs will be perfect to display and analyize this data.  
+```{r oil-line}
+ggplot(data=oilMarket_tidy, aes(x=Date, y=oil)) +
+  geom_line()+
+  geom_point()
+```  
+The line graph above shows the price of oil throughout the dates. As expected, there is no pattern to the price hikes & dips. The oil price, however, mostly stays in the range of `$`40-125. It was going slowly up for a while until 2015 where it dipped and stabilized. There is one huge drop below `$`0 in early 2020. Interestingly, I think this weird drop is caused by the beginning of the pandemic. Since then, the price is increasing rapidly but, the end of graph shows a dip has started. 
+
+```{r gold-line}
+ggplot(data=goldMarket_tidy, aes(x=Date, y=gold)) +
+  geom_line()+
+  geom_point()
+```
+The line graph above shows the price of gold throughout the dates. Unlike the oil prices, the gold price is rapidly changing and starts much higher. There are two hugely increasing hikes up around 2009-2012 and 2018-2021. These is also three time periods where the price is stable. 
+
+While the graph looks like gold is making bigger changing and the price of oil changes the most.
+For the oil, the starting price was around `$`49 and ending price around `$`74 so there was only a `$`25 difference (~66% increase). On the other other hand, gold's starting price was around `$`900 and end around `$`1850 so a `$`950 difference (around a 48% increase). Both of these graphs have a lot of points with small increasing or decreasing from day to day resulting very zigzag lines.
+
+```{r treasury-line}
+ggplot(data=treasuryMarket_tidy, aes(x=dxy, y=Amount, color=Date)) +
+  geom_point()
+```
+The last graph shows the relationship between dxp/us dollar index and the bond yield amount grouped by dates. From the scatter plot we can see the clean increase in the dxy as opposed to the scattered y axis, bond yield. The different dates are represented by increasing blue colored lightness. All the same shade of blue tends to be bundled together with no stray points around the x axis. The same shade group have points up and down the y axis. This indicates that the treasury amount or bond yield has no pattern. 
