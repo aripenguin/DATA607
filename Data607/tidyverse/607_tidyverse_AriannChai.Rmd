@@ -1,0 +1,49 @@
+---
+title: "607 Tidyverse Lubridate"
+author: "Ariann Chai"
+date: "2023-11-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Lubridate
+
+The tidyrverse package I used was lubridate which is used for date formatting and math.
+
+```{r libraries, warning=FALSE}
+library(tidyr)
+library(lubridate)
+```
+
+## Data
+
+The dataset I used was "UK National Lottery - results 1994-2023" by Delta Romeo off of Kaggle (https://www.kaggle.com/datasets/deltaromeo/uk-national-lottery-results-1994-2023/).  
+This dataset had four columns depicted to the date (weekday, day, month, year). My goal was to condense these columns which I ended leaving as two: weekday and date. Weekdays was edited to have the full name of weekday and date now contains the formatted year, month, and day.  
+
+```{r intial data}
+lotteryInitial <- read.csv("lotteryorder.csv")
+lotteryInitial = lotteryInitial[-1,]
+head(lotteryInitial)
+colnames(lotteryInitial)
+```
+
+```{r clean data}
+lotteryClean <- subset(lotteryInitial, select=-c(4,5))
+colnames(lotteryClean)[3] = "Date"
+head(lotteryClean)
+
+for (i in 1:length(lotteryClean)){
+  #get for lotteryInitial - DD MMM YYYY
+  day = lotteryInitial$DD
+  month = lotteryInitial$MMM
+  year = lotteryInitial$YYYY
+  date =  paste(year, month, day, sep="")
+  lotteryClean$Date = ymd(date)
+  lotteryClean$Day = wday(ymd(date),label = TRUE, abbr = FALSE)
+}
+
+head(lotteryClean)
+```
