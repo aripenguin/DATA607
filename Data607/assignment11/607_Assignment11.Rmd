@@ -1,0 +1,39 @@
+---
+title: "Assignment 11"
+author: "Ariann Chai"
+date: "2023-11-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+For this week's Data 607 assignment, we had to identify and analyze a recommender system. Then, answer the scenario design questions for this.   
+
+The recommender system I chose is Mercari. Mercari is an e-commerce marketplace, based in Japan, where you can sell or buy second hand goods from other people. Mercari is similar to eBay or feels more like eBay back in its freshman years when it was on a smaller scale or more personal. I spend a lot of time on Mercari looking for old/used books or albums.  
+
+## Scenario Analysis 1: As an organization  
+
+1. Who are your target users? People who want to sell their second-hand goods or other items and people looking to buy these goods.  
+2. What are their key goals? To help people sell and buy goods in a safely online. Also as a business, another key goal is to make a profit off these listings by taking a 10% fee off of every sales.   
+3. How can you help them accomplish those goals? By providing a platform/site/app for people can easily list their goods or browse & buy others' goods. Mercari also makes secure that payment transactions are safe and protected in order to be trusted by users. Lastly, to help create more transactions between users, it is important to have a good searching tool and recommendation system. This way, users can easily look up for items based on words or have their listings found by people searching for that specific item faster. A recommendation system can help speed up the process of connecting the right items to the right people by showcase items they mightbe interested in before they search for it.  
+
+## Scenario Analysis 2: As a user/customer  
+
+1. Who are your target users? Fellow Mercari users who either have items I want or want to buy items I have.  
+2. What are their key goals? The goal is to either sell or buy second hand goods to/from other people.  
+3. How can you help them accomplish those goals? In order to accomplish this goal, one relies on Mercari's tools for listing items, safe transactions, and efficient item searching or recommendations.
+
+## Conclusion 
+ 
+The recommendation system Mercari uses is based off of the individial's browsing, buying, and likes (items they save) history. It uses key words or the #hashtags added to item listings to match or recommend items. These recommended items either fit the targeted individual's past search words/hashtags or shares words/hashtags with items they have recently looked at or bought.
+
+As a Mercari user myself, I think the recommendation system is pretty sound and always shows me some posts I am interested in. The recommendation system does not explicitly ask for feedback like "does this item fit your interests?" to know if it is up to user's satisfactions. The recommended items also tends to include some of the items that I have saved already so I would request that Mercari add a filter to removed already liked items.  
+
+## Extra
+Mercari is even starting to test a recommender system for prices to recommend to sellers list items by using price data from similar or the same items sold for in the past.  
+https://blog.mercari.com/eng-posts/price-guidance-system-leveraging-artificial-intelligence-techniques
+
