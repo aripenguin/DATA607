@@ -1,0 +1,474 @@
+---
+title: "Data 607 Final Project presentation"
+author: "Ariann Chai"
+date: "2023-12-14"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(readr)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+
+myanimelist_manga <- read.csv("myanimelist/manga.csv")
+myanimelist_anime <- read.csv("myanimelist/anime.csv")
+bestsellingmanga <- read.csv("best-selling-manga.csv")
+
+head(bestsellingmanga, 1)
+colnames(bestsellingmanga)
+nrow(bestsellingmanga)
+
+
+```
+
+## Introduction
+
+My project's focus is manga or Japanese comic books/graphic novels.  
+
+Ever year, there are lots of manga that come out of Japan either brand-new or continuing from the years prior. While some manga succeed or stay succeeding, a lot of other manga are cancelled or left on hiatus early in its run. Not all factors that lend to this is in the hands of the people working on it.  
+  
+My questions:  
+- What variables make for a successful manga series?  
+- Can we predict which manga series will be successful?
+
+## Data
+I got both of my datasets from Kaggle 
+
+- MyAnimeList (https://www.kaggle.com/datasets/andreuvallhernndez/myanimelist) by Andreu Vall Hernàndez. Has 64,833 rows due to having the whole website's database of manga.
+- Best-Selling Manga (https://www.kaggle.com/datasets/drahulsingh/best-selling-manga) by D Rahulsingh. A dataset of 187 manga.
+
+
+## Data Cleaning - myAnimelist
+```{r colnames manga,  echo = TRUE, size="tiny"}
+colnames(myanimelist_manga)
+```
+
+## Data Cleaning - myAnimelist
+```{r colnames anime,  echo = TRUE, size="tiny"}
+colnames(myanimelist_anime)
+```
+
+## Data Cleaning - myAnimelist
+```{r colnames clean,  echo = TRUE, size="tiny"}
+myanimelist_manga <- subset(myanimelist_manga, 
+                            select=c(1,2,3,4,5,6,7,8,9,10,11,12,13,19,20,21,23))
+colnames(myanimelist_manga)
+
+myanimelist_anime <- subset(myanimelist_anime, 
+                            select=c(1,2,3,4,5,6,7,8,9,10,11,12,15,29))
+colnames(myanimelist_anime)
+```
+
+## myAnimelist_manga
+
+```{r myanimelist_manga head, echo = TRUE}
+head(myanimelist_manga, 1)
+```
+
+## myAnimelist_manga
+
+```{r myanimelist_manga, echo = TRUE}
+myanimelist_manga$end_date[myanimelist_manga$end_date==""] <- NA
+myanimelist_manga$demographics <- 
+  str_extract(myanimelist_manga$demographics, "[A-Z]+[a-z]+")
+myanimelist_manga$serializations <- 
+  str_extract(myanimelist_manga$serializations, "[A-Z]+[a-z]+")
+
+myanimelist_manga$title[myanimelist_manga$title=="One Punch-Man"] <- 
+  "One Punch Man"
+```
+
+## situations incorprating myAnimelist_anime
+
+I ran into the problem of add some myanimelist_anime for the manga dataset.
+
+- myanimelist <- left_join(myanimelist_manga, myanimelist_anime, by = "title")
+
+- the for loop: 
+  for (x in head(myanimelist)) {
+  t <- myanimelist$title[x] %in% myanimelist_anime$title
+  ifelse(t==TRUE, myanimelist$anime_adaptation[myanimelist$title == myanimelist$title[x], ] <- 'Yes', 'No')
+    #if(sum(str_detect(myanimelist_anime$title, myanimelist$title[x])) > 0){
+      #myanimelist$anime_adaptation[x] <- "Yes"
+    #}
+  }
+
+## Solution
+```{r myanimelist, echo = TRUE}
+myanimelist <- myanimelist_manga
+myanimelist$anime_adaptation <- 'No'
+myanimelist$anime_adaptation[myanimelist$title %in% myanimelist_anime$title] <- 
+  "Yes"
+head(myanimelist[, c(2,18)])
+```
+
+## bestsellingmanga
+I planned to join myanimelist_manga to bestsellingmanga, but it needs some cleaning first.  
+
+```{r bestsellingmanga colname, echo = TRUE}
+colnames(bestsellingmanga)
+```
+
+## bestsellingmanga
+
+```{r bestsellingmanga clean join, echo = TRUE}
+colnames(bestsellingmanga)[1]="title"
+bestsellingmanga <- 
+  inner_join(bestsellingmanga, myanimelist_manga, by = "title")
+#get rid of non manga rows if type != "manga" for dups
+bestsellingmanga <- 
+  bestsellingmanga[bestsellingmanga$type == 'manga', ]
+nrow(bestsellingmanga)
+
+bestsellingmanga$anime_adaptation <- 'No'
+bestsellingmanga$anime_adaptation[bestsellingmanga$title %in% myanimelist_anime$title] <- 
+  "Yes"
+```
+
+## bestsellingmanga
+
+```{r bestsellingmanga anime adaptation, echo = TRUE}
+head(bestsellingmanga[, c(1,25)], 15)
+```
+
+## Genres and Themes
+
+```{r bestsellingmanga genres themes}
+print("['Action','Award Winning']")
+print("['Vampire','School']")
+```
+
+## Genres datasets
+
+```{r genres, echo = TRUE}
+manga_genres <- data.frame(matrix(ncol=2,nrow=0))
+colnames(manga_genres) <- c('title','genre')
+manga_genres
+
+for (i in 1:nrow(bestsellingmanga)){
+  genre_manga <- 
+    str_extract_all(bestsellingmanga$genres[i],
+                    "[A-Za-z]+(-[A-Za-z]+)?( [A-Za-z]+ [A-Za-z]+)?( [A-Za-z]+)?")
+  for(m in genre_manga){
+    for(n in m){
+      manga_genres[nrow(manga_genres) + 1, ] = 
+        c(bestsellingmanga$title[i], n)
+    }
+  }
+}
+```
+
+## Genres datasets
+
+```{r genres data, echo = TRUE}
+head(manga_genres)
+nrow(manga_genres)
+```
+
+## Themes dataset
+
+```{r themes, echo = TRUE}
+manga_themes <- data.frame(matrix(ncol=2,nrow=0))
+colnames(manga_themes) <- c('title','theme')
+manga_themes
+
+for (i in 1:nrow(bestsellingmanga)){
+  theme_manga <- 
+    str_extract_all(bestsellingmanga$themes[i],
+                    "[A-Za-z]+(-[A-Za-z]+)?( [A-Za-z]+ [A-Za-z]+)?( [A-Za-z]+)?")
+  for(m in theme_manga){
+    for(n in m){
+      manga_themes[nrow(manga_themes) + 1, ] = 
+        c(bestsellingmanga$title[i], n)
+    }
+  }
+}
+```
+
+## Themes dataset
+
+```{r themes data, echo = TRUE}
+head(manga_themes)
+nrow(manga_themes)
+```
+
+## How many of the best-selling manga have anime adaptations?
+
+```{r data analysis anime adaptation}
+animelist <- data.frame(matrix(ncol=2,nrow=0))
+colnames(animelist) <- c('anime_adaptation','count')
+animelist[nrow(animelist) + 1, ] = 
+  c('Yes', nrow(bestsellingmanga[bestsellingmanga$anime_adaptation == "Yes", ]))
+animelist[nrow(animelist) + 1, ] = 
+  c('No', nrow(bestsellingmanga[bestsellingmanga$anime_adaptation == "No", ]))
+
+ggplot(data=animelist, aes(x=anime_adaptation, y=count)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+```
+
+## Best-selling manga's genres
+
+```{r data analysis genres}
+manga_genres$count <- 1
+top_genres <- 
+  manga_genres %>% group_by(genre) %>% 
+  summarise(count=sum(count),
+            .groups = 'drop')
+top_genres <- top_genres[order(top_genres$count, decreasing = TRUE), ]
+
+ggplot(data=top_genres, aes(x=genre, y=count)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+```
+
+## Best-selling manga's themes
+
+```{r data analysis themes}
+manga_themes$count <- 1
+top_themes <- 
+  manga_themes %>% group_by(theme) %>% 
+  summarise(count=sum(count),
+            .groups = 'drop')
+top_themes <- top_themes[order(top_themes$count, decreasing = TRUE), ]
+
+ggplot(data=top_themes, aes(x=theme, y=count)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+```
+
+## Probabilty through sample size
+```{r samp, echo = TRUE}
+set.seed(49568)
+samp <- myanimelist %>%
+  sample_n(10)
+head(samp[, c(2, 14, 15)], 5)
+```
+
+## Genre - sample size
+```{r samp genres, echo = TRUE}
+samp_genres <- data.frame(matrix(ncol=2,nrow=0))
+colnames(samp_genres) <- c('title','genre')
+
+for (i in 1:nrow(samp)){
+  t <- str_extract_all(samp$genres[i],"[A-Za-z]+(-[A-Za-z]+)?( [A-Za-z]+ [A-Za-z]+)?( [A-Za-z]+)?")
+  for(m in t){
+    for(n in m){
+      samp_genres[nrow(samp_genres) + 1, ] = c(samp$title[i], n)
+    }
+  }
+}
+```
+
+## Genre - sample size
+```{r samp genres head, echo = TRUE}
+head(samp_genres)
+```
+
+## Genre - sample size
+```{r samp genres stats, echo = TRUE}
+samp_genres$count <- 1
+samp_genres_stats <- samp_genres %>% group_by(genre) %>%
+  summarise(count=sum(count),
+            .groups = 'drop')
+samp_genres_stats <- samp_genres_stats[order(samp_genres_stats$count, decreasing = TRUE), ]
+```
+
+## Genre - sample size
+```{r samp genres stats head, echo = TRUE}
+samp_genres_stats
+```
+
+## Genre - sample size
+```{r samp genres probability, echo = TRUE}
+t <- 0 
+for(x in 1:nrow(samp_genres_stats)){
+  if(samp_genres_stats$genre[x] %in% head(top_genres$genre, 5)){
+    t <- t + samp_genres_stats$count[x]
+  }
+}
+print((t/sum(samp_genres_stats$count))*100)
+```
+
+## Theme - sample size
+```{r samp themes, echo = TRUE}
+samp_themes <- data.frame(matrix(ncol=2,nrow=0))
+colnames(samp_themes) <- c('title','theme')
+
+for (i in 1:nrow(samp)){
+  t <- str_extract_all(samp$themes[i],"[A-Za-z]+(-[A-Za-z]+)?( [A-Za-z]+ [A-Za-z]+)?( [A-Za-z]+)?")
+  for(m in t){
+    for(n in m){
+      samp_themes[nrow(samp_themes) + 1, ] = c(samp$title[i], n)
+    }
+  }
+}
+```
+
+## Theme - sample size
+```{r samp themes head, echo = TRUE}
+head(samp_themes)
+```
+
+## Theme - sample size
+```{r samp themes stats, echo = TRUE}
+samp_themes$count <- 1
+samp_themes_stats <- samp_themes %>% group_by(theme) %>%
+  summarise(count=sum(count),
+            .groups = 'drop')
+samp_themes_stats <- samp_themes_stats[order(samp_themes_stats$count, decreasing = TRUE), ]
+```
+
+## Theme - sample size
+```{r samp themes stats head, echo = TRUE}
+samp_themes_stats
+```
+
+## Theme - sample size
+```{r samp themes probability, echo = TRUE}
+t <- 0 
+for(x in 1:nrow(samp_themes_stats)){
+  if(samp_themes_stats$theme[x] %in% head(top_themes$theme, 5)){
+    t <- t + samp_themes_stats$count[x]
+  }
+}
+print((t/sum(samp_themes_stats$count))*100)
+```
+
+## more samples
+```{r samples 50}
+set.seed(493954)
+samp <- myanimelist %>%
+  sample_n(50)
+
+samp_genres <- data.frame(matrix(ncol=2,nrow=0))
+colnames(samp_genres) <- c('title','genre')
+
+for (i in 1:nrow(samp)){
+  t <- str_extract_all(samp$genres[i],"[A-Za-z]+(-[A-Za-z]+)?( [A-Za-z]+ [A-Za-z]+)?( [A-Za-z]+)?")
+  for(m in t){
+    for(n in m){
+      samp_genres[nrow(samp_genres) + 1, ] = c(samp$title[i], n)
+    }
+  }
+}
+samp_genres <- na.omit(samp_genres)
+
+samp_genres$count <- 1
+samp_genres_stats <- samp_genres %>% group_by(genre) %>%
+  summarise(count=sum(count),
+            .groups = 'drop')
+samp_genres_stats <- samp_genres_stats[order(samp_genres_stats$count, decreasing = TRUE), ]
+
+t <- 0 
+for(x in 1:nrow(samp_genres_stats)){
+  if(samp_genres_stats$genre[x] %in% head(top_genres$genre, 5)){
+    t <- t + samp_genres_stats$count[x]
+  }
+}
+print("For sample size 50's genres:")
+print((t/sum(samp_genres_stats$count))*100)
+
+samp_themes <- data.frame(matrix(ncol=2,nrow=0))
+colnames(samp_themes) <- c('title','theme')
+
+for (i in 1:nrow(samp)){
+  t <- str_extract_all(samp$themes[i],"[A-Za-z]+(-[A-Za-z]+)?( [A-Za-z]+ [A-Za-z]+)?( [A-Za-z]+)?")
+  for(m in t){
+    for(n in m){
+      samp_themes[nrow(samp_themes) + 1, ] = c(samp$title[i], n)
+    }
+  }
+}
+samp_themes <- na.omit(samp_themes)
+
+samp_themes$count <- 1
+samp_themes_stats <- samp_themes %>% group_by(theme) %>%
+  summarise(count=sum(count),
+            .groups = 'drop')
+samp_themes_stats <- samp_themes_stats[order(samp_themes_stats$count, decreasing = TRUE), ]
+
+t <- 0 
+for(x in 1:nrow(samp_themes_stats)){
+  if(samp_themes_stats$theme[x] %in% head(top_themes$theme, 5)){
+    t <- t + samp_themes_stats$count[x]
+  }
+}
+print("For sample size 50's themes:")
+print((t/sum(samp_themes_stats$count))*100)
+```
+
+```{r samples 100}
+set.seed(493024)
+samp <- myanimelist %>%
+  sample_n(100)
+
+samp_genres <- data.frame(matrix(ncol=2,nrow=0))
+colnames(samp_genres) <- c('title','genre')
+
+for (i in 1:nrow(samp)){
+  t <- str_extract_all(samp$genres[i],"[A-Za-z]+(-[A-Za-z]+)?( [A-Za-z]+ [A-Za-z]+)?( [A-Za-z]+)?")
+  for(m in t){
+    for(n in m){
+      samp_genres[nrow(samp_genres) + 1, ] = c(samp$title[i], n)
+    }
+  }
+}
+samp_genres <- na.omit(samp_genres)
+
+samp_genres$count <- 1
+samp_genres_stats <- samp_genres %>% group_by(genre) %>%
+  summarise(count=sum(count),
+            .groups = 'drop')
+samp_genres_stats <- samp_genres_stats[order(samp_genres_stats$count, decreasing = TRUE), ]
+
+t <- 0 
+for(x in 1:nrow(samp_genres_stats)){
+  if(samp_genres_stats$genre[x] %in% head(top_genres$genre, 5)){
+    t <- t + samp_genres_stats$count[x]
+  }
+}
+print("For sample size 100's genres:")
+print((t/sum(samp_genres_stats$count))*100)
+
+samp_themes <- data.frame(matrix(ncol=2,nrow=0))
+colnames(samp_themes) <- c('title','theme')
+
+for (i in 1:nrow(samp)){
+  t <- str_extract_all(samp$themes[i],"[A-Za-z]+(-[A-Za-z]+)?( [A-Za-z]+ [A-Za-z]+)?( [A-Za-z]+)?")
+  for(m in t){
+    for(n in m){
+      samp_themes[nrow(samp_themes) + 1, ] = c(samp$title[i], n)
+    }
+  }
+}
+samp_themes <- na.omit(samp_themes)
+
+samp_themes$count <- 1
+samp_themes_stats <- samp_themes %>% group_by(theme) %>%
+  summarise(count=sum(count),
+            .groups = 'drop')
+samp_themes_stats <- samp_themes_stats[order(samp_themes_stats$count, decreasing = TRUE), ]
+
+t <- 0 
+for(x in 1:nrow(samp_themes_stats)){
+  if(samp_themes_stats$theme[x] %in% head(top_themes$theme, 5)){
+    t <- t + samp_themes_stats$count[x]
+  }
+}
+print("For sample size 100's themes:")
+print((t/sum(samp_themes_stats$count))*100)
+```
+
+
+## Conclusion 
+The three variables I decided to look: if there's an anime adaptation, it's genres, and it's themes where all shown to have an affect on the success of a new manga to varies degree. 
+
+Anime adaptations: 17:82 for best selling mangas without/with an adaptation. (~82.82%)
+Genres & Themes: there are clear subject topics that a lot of the best selling mangas fall under
+
+Next steps: I would like to dive more into testing samples using probability and test more variables that might have also be big success factors (i.e. start_date, anime_length).
+
+
